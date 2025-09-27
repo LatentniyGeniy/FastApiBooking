@@ -9,7 +9,8 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.api.hotels import router as router_hotelsdir
-from src.config import settings
+from src.config import Settings
+
 
 app = FastAPI()
 
