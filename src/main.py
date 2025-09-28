@@ -8,13 +8,13 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.api.hotels import router as router_hotelsdir
+from src.api.hotels import router as router_hotels
 from src.config import Settings
 
 
 app = FastAPI()
 
-app.include_router(router_hotelsdir)
+app.include_router(router_hotels)
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
