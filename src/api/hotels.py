@@ -2,8 +2,9 @@ from fastapi import  Query, APIRouter, Body
 
 from sqlalchemy import insert, select
 
-from src.database import async_session_maker
+from src.database import async_session_maker, engine
 from src.models.hotels import HotelsModel
+from src.repositories.hotels import HotelsRepositories
 from src.schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 
@@ -19,30 +20,19 @@ async def get_hotels(
 ):
     per_page = pagination.per_page or 5
     async with async_session_maker() as session:
-        query = select(HotelsModel)
-        if location:
-                query = query.where(HotelsModel.location.ilike(f'%{location.strip()}%'))
-        if title:
-            query = query.where(HotelsModel.title.ilike(f'%{title.strip()}%'))
-        query = (
-            query
-            .limit(per_page)
-            .offset(per_page * (pagination.page - 1))
+        return await HotelsRepositories(session).get_all(
+            location=location,
+            title=title,
+            limit=per_page,
+            offset=per_page * (pagination.page - 1)
         )
-        print(query.compile(compile_kwargs={"literal_binds": True}))
-        result = await session.execute(query)
-
-        hotels = result.scalars().all()
-        return hotels
-    #if pagination.per_page and pagination.page:
-    #   return hotels_[pagination.per_page * (pagination.page-1):][:pagination.per_page]
 
 
 @router.delete("/{hotel_id}")
 def delete_hotel(hotel_id:int):
     global hotels
     hotels = [ hotel for hotel in hotels if hotel['id'] != hotel_id ]
-    return {'status': 'OK'}
+    return {"status": "OK"}
 
 
 @router.post("")
@@ -66,11 +56,10 @@ async def create_hotel(hotel_data:Hotel = Body(openapi_examples={
 })
 ):
     async with async_session_maker() as session:
-        add_hotel_stmt= insert(HotelsModel).values(**hotel_data.model_dump())
-        await session.execute(add_hotel_stmt)
+        hotel = await HotelsRepositories(session).add(hotel_data)
         await session.commit()
 
-    return {'status': 'OK'}
+    return {"status": "OK", "data": hotel}
 
 @router.put("/{hotel_id}")
 def edit_hotel(hotel_id:int, hotel_data:Hotel):
