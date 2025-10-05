@@ -21,14 +21,15 @@ async def get_hotels(
     async with async_session_maker() as session:
         query = select(HotelsModel)
         if location:
-                query = query.where(HotelsModel.location.ilike(f'%{location}%'))
+                query = query.where(HotelsModel.location.ilike(f'%{location.strip()}%'))
         if title:
-            query = query.where(HotelsModel.title.like(f'%{title}%'))
+            query = query.where(HotelsModel.title.ilike(f'%{title.strip()}%'))
         query = (
             query
             .limit(per_page)
             .offset(per_page * (pagination.page - 1))
         )
+        print(query.compile(compile_kwargs={"literal_binds": True}))
         result = await session.execute(query)
 
         hotels = result.scalars().all()
