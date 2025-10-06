@@ -1,4 +1,4 @@
-from fastapi import  Query, APIRouter, Body
+from fastapi import Query, APIRouter, Body, HTTPException
 
 from src.database import async_session_maker
 from src.repositories.hotels import HotelsRepositories
@@ -28,7 +28,17 @@ async def get_hotels(
 @router.delete("/{hotel_id}")
 async def delete_hotel(hotel_id:int):
     async with async_session_maker() as session:
-        await HotelsRepositories(session).delete(id = hotel_id)
+        delete = await HotelsRepositories(session).delete(id = hotel_id)
+        if delete == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Отель не найден"
+            )
+        elif delete > 1:
+            raise HTTPException(
+                status_code=422,
+                detail="Попытка удалить больше одного отеля"
+            )
         await session.commit()
     return {"status": "OK"}
 
@@ -62,7 +72,17 @@ async def create_hotel(hotel_data:Hotel = Body(openapi_examples={
 @router.put("/{hotel_id}")
 async def edit_hotel(hotel_id:int, hotel_data:Hotel):
     async with async_session_maker() as session:
-        await HotelsRepositories(session).edit(hotel_data, id = hotel_id)
+        edit = await HotelsRepositories(session).edit(hotel_data, id = hotel_id)
+        if edit == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Отель не найден"
+            )
+        elif edit > 1:
+            raise HTTPException(
+                status_code=422,
+                detail="Попытка изменить больше одного отеля"
+            )
         await session.commit()
     return {'status': 'OK'}
 
