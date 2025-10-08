@@ -13,7 +13,6 @@ async def get_hotels(
         pagination: PaginationDep,
         location:str | None = Query(None, description = "Адрес"),
         title:str | None = Query(None, description = "Название отеля"),
-
 ):
     per_page = pagination.per_page or 5
     async with async_session_maker() as session:
@@ -23,6 +22,13 @@ async def get_hotels(
             limit=per_page,
             offset=per_page * (pagination.page - 1)
         )
+
+
+@router.get("/{hotel_id}")
+async def get_hotel(hotel_id:int):
+    async with async_session_maker() as session:
+       return await HotelsRepositories(session).get_one_or_none(id=hotel_id)
+
 
 
 @router.delete("/{hotel_id}")
@@ -88,15 +94,18 @@ async def edit_hotel(hotel_id:int, hotel_data:Hotel):
 
 
 @router.patch("/{hotel_id}")
-def patch_hotel(hotel_id:int, hotel_data:HotelPatch):
-    global hotels
-    if hotel_id > 0:
-        if  hotel_data.title != None and hotel_data.name != None:
-            edit_hotel(hotel_id, hotel_data.title, hotel_data.name)
-        elif hotel_data.title != None:
-            hotels[hotel_id-1].update({'title' : hotel_data.title})
-        elif hotel_data.name != None:
-            hotels[hotel_id-1].update({'name' : hotel_data.name})
-    else:
-        return {'status': 'Bad id'}
+async def patch_hotel(hotel_id:int, hotel_data:HotelPatch):
+    async with async_session_maker() as session:
+        edit = await HotelsRepositories(session).edit(hotel_data, exclude_unset = True,  id = hotel_id)
+        if edit == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Отель не найден"
+            )
+        elif edit > 1:
+            raise HTTPException(
+                status_code=422,
+                detail="Попытка изменить больше одного отеля"
+            )
+        await session.commit()
     return {'status': 'OK'}
