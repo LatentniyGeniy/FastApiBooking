@@ -15,7 +15,6 @@ router = APIRouter(prefix="/auth", tags=["Авторизация и аутент
 
 
 
-
 @router.post("/register")
 async def register_user(user_data: UserRequestAdd,):
     hashed_password = AuthService().hash_password(user_data.password)
@@ -31,6 +30,7 @@ async def register_user(user_data: UserRequestAdd,):
         await session.commit()
 
     return {"status": "OK"}
+
 
 @router.post("/login")
 async def login_user( user_data: UserAccess, response: Response):
@@ -50,7 +50,12 @@ async def login_user( user_data: UserAccess, response: Response):
         response.set_cookie("access_token", access_token)
         return {"access_token": access_token}
 
+
 @router.get("/only_auth")
 async def only_auth(request: Request,):
-    access_token = request.cookies.items() or None
-    return access_token
+    access_token = request.cookies.get("access_token", None)
+    data = AuthService().decode_token(access_token)
+    user_id = data["user_id"]
+    async with async_session_maker() as session:
+        user = await UsersRepositories(session).get_one_or_none(id=user_id)
+        return user
