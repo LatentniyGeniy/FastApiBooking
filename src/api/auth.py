@@ -1,7 +1,7 @@
 
 
 from fastapi import APIRouter, HTTPException, status
-
+from starlette.requests import Request
 
 from starlette.responses import Response
 
@@ -49,3 +49,8 @@ async def login_user( user_data: UserAccess, response: Response):
         access_token = AuthService().create_access_token({"user_id": user.id})
         response.set_cookie("access_token", access_token)
         return {"access_token": access_token}
+
+@router.get("/only_auth")
+async def only_auth(request: Request,):
+    access_token = request.cookies.items() or None
+    return access_token
