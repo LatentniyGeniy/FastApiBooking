@@ -1,72 +1,64 @@
-from fastapi import Query, APIRouter, Body, HTTPException
+from fastapi import APIRouter, HTTPException
 
-from src.database import async_session_maker
-from src.repositories.hotels import HotelsRepositories
-from src.repositories.rooms import RoomsRepositories
-from src.schemas.rooms import Room, RoomPatch, RoomAdd, RoomAddRequest, RoomPatchRequest
+from src.api.dependencies import DBDep
+from src.schemas.rooms import RoomPatch, RoomAdd, RoomAddRequest, RoomPatchRequest
+
 
 router = APIRouter(prefix="/hotels", tags=["Номера"])
 
 
 @router.get("/{hotel_id}/rooms")
-async def get_rooms(hotel_id: int):
-    async with async_session_maker() as session:
-        return await RoomsRepositories(session).get_filtered(hotel_id=hotel_id)
+async def get_rooms(db: DBDep, hotel_id: int):
+    return await db.rooms.get_filtered(hotel_id=hotel_id)
 
 
 @router.get("/{hotel_id}/rooms/{room_id}")
-async def get_room(hotel_id:int, room_id:int ):
-    async with async_session_maker() as session:
-        return await RoomsRepositories(session).get_one_or_none(id=room_id, hotel_id=hotel_id)
+async def get_room(db: DBDep, hotel_id:int, room_id:int ):
+    return await db.rooms.get_one_or_none(id=room_id, hotel_id=hotel_id)
 
 
 @router.post("/{hotel_id}/rooms")
-async def create_room(hotel_id:int, room_data:RoomAddRequest):
+async def create_room(db: DBDep, hotel_id:int, room_data:RoomAddRequest):
     _room_data = RoomAdd(hotel_id=hotel_id ,**room_data.model_dump())
-    async with async_session_maker() as session:
-        hotel = await HotelsRepositories(session).exists(id=hotel_id)
-        if not hotel:
-            raise HTTPException(
-                status_code=404,
-                detail="Отель не найден"
-            )
-
-        room = await RoomsRepositories(session).add(_room_data)
-        await session.commit()
+    hotel = await db.hotels.exists(id=hotel_id)
+    if not hotel:
+        raise HTTPException(
+            status_code=404,
+            detail="Отель не найден"
+        )
+    room = await db.rooms.add(_room_data)
+    await db.session.commit()
     return {"status": "OK", "data": room}
 
 
 @router.delete("/{hotel_id}/rooms/{room_id}")
-async def delete_room(hotel_id:int, room_id:int):
-    async with async_session_maker() as session:
-        delete = await RoomsRepositories(session).delete(id=room_id, hotel_id=hotel_id)
-        if delete == 0:
-            raise HTTPException(
-                status_code=404,
-                detail="Номер не найден"
-            )
-        elif delete > 1:
-            raise HTTPException(
-                status_code=422,
-                detail="Попытка удалить больше одного номера"
-            )
-        await session.commit()
+async def delete_room(db: DBDep, hotel_id:int, room_id:int):
+    delete = await db.rooms.delete(id=room_id, hotel_id=hotel_id)
+    if delete == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Номер не найден"
+        )
+    elif delete > 1:
+        raise HTTPException(
+            status_code=422,
+            detail="Попытка удалить больше одного номера"
+        )
+    await db.session.commit()
     return {"status": "OK"}
 
 
 @router.put("/{hotel_id}/rooms/{room_id}")
-async def edit_room(hotel_id:int, room_id:int, room_data:RoomAddRequest):
+async def edit_room(db: DBDep, hotel_id:int, room_id:int, room_data:RoomAddRequest):
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
-    async with async_session_maker() as session:
-        await RoomsRepositories(session).edit(_room_data, id = room_id)
-        await session.commit()
+    await db.rooms.edit(_room_data, id = room_id)
+    await db.session.commit()
     return {'status': 'OK'}
 
 
 @router.patch("/{hotel_id}/rooms/{room_id}")
-async def patch_room(hotel_id:int,room_id:int, room_data:RoomPatchRequest):
+async def patch_room(db: DBDep, hotel_id:int,room_id:int, room_data:RoomPatchRequest):
     _room_data = RoomPatch(hotel_id=hotel_id, **room_data.model_dump(exclude_unset = True))
-    async with async_session_maker() as session:
-        await RoomsRepositories(session).edit(_room_data, exclude_unset = True,  id = room_id, hotel_id=hotel_id)
-        await session.commit()
+    await db.rooms.edit(_room_data, exclude_unset = True,  id = room_id, hotel_id=hotel_id)
+    await db.session.commit()
     return {'status': 'OK'}
