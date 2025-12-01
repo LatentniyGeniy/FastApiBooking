@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi import Request
 
 from src.database import async_session_maker
-from src.services.ayth import AuthService
+from src.services.auth import AuthService
 from src.utils.db_manager import DBManager
 
 

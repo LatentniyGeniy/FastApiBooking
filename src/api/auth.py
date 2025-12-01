@@ -4,7 +4,7 @@ from starlette.responses import Response
 
 from src.api.dependencies import UserIdDep, DBDep
 from src.schemas.users import UserRequestAdd, UserAdd, UserAccess
-from src.services.ayth import AuthService
+from src.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Авторизация и аутентификация"])
 
