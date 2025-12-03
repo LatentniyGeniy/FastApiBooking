@@ -7,7 +7,6 @@ import jwt
 from src.config import settings
 
 
-
 class AuthService:
     password_hash = PasswordHash.recommended()
 

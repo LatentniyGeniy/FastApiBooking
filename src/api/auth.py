@@ -9,7 +9,6 @@ from src.services.auth import AuthService
 router = APIRouter(prefix="/auth", tags=["Авторизация и аутентификация"])
 
 
-
 @router.post("/register")
 async def register_user(db: DBDep, user_data: UserRequestAdd,):
     hashed_password = AuthService().hash_password(user_data.password)
