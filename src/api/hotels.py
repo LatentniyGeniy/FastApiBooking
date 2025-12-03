@@ -1,6 +1,5 @@
 from fastapi import Query, APIRouter, Body, HTTPException
 
-from src.database import async_session_maker
 from src.schemas.hotels import HotelPatch, HotelAdd
 from src.api.dependencies import PaginationDep, DBDep
 
