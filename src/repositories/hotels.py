@@ -5,6 +5,8 @@ from sqlalchemy import select
 from src.models.rooms import RoomsModel
 from src.repositories.base import BaseRepository
 from src.models.hotels import HotelsModel
+from src.repositories.mappers.base import DataMapper
+from src.repositories.mappers.mappers import HotelDataMapper
 from src.repositories.utils import rooms_ids_for_bookings
 from src.schemas.hotels import Hotel
 
@@ -12,6 +14,7 @@ from src.schemas.hotels import Hotel
 class HotelsRepositories(BaseRepository):
     model = HotelsModel
     schema = Hotel
+    mapper: DataMapper = HotelDataMapper
 
     async def get_all(
             self,
@@ -33,7 +36,7 @@ class HotelsRepositories(BaseRepository):
             print(query.compile(compile_kwargs={"literal_binds": True}))
             result = await self.session.execute(query)
 
-            return [Hotel.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
+            return [self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()]
 
 
     async def get_filtered_by_time(
@@ -65,6 +68,6 @@ class HotelsRepositories(BaseRepository):
         )
         result = await self.session.execute(query)
 
-        return [Hotel.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
+        return [self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()]
 
 
